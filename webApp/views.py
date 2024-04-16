@@ -1,32 +1,29 @@
-import io
+
 import json
 import time
 import pandas as pd
-import matplotlib
 import requests
+from django.shortcuts import render
 
-from textAnalyis import settings
-matplotlib.use('Agg')  # Use a non-interactive backend
-import matplotlib.pyplot as plt
-import seaborn as sns
+import os
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
+import logging
+logging.getLogger('tensorflow').setLevel(logging.ERROR)
+
 from transformers import pipeline
 from googletrans import Translator
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
-from django.shortcuts import render
 from .forms import SentimentAnalysisForm
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-import os
-os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
 
-import tensorflow as tf
 
 
 sentiment_analyzer = pipeline('sentiment-analysis', model="distilbert-base-uncased-finetuned-sst-2-english")
@@ -46,11 +43,11 @@ def translate_text(text, target_lang='en'):
     try:
         if text:
             translator = Translator()
-            print(f"Translating text: {text}")
+            # print(f"Translating text: {text}")
             translation = translator.translate(text, dest=target_lang)
             if translation is not None:
                 translated_text = translation.text
-                print(f"Translated text: {translated_text}")
+                # print(f"Translated text: {translated_text}")
                 return translated_text
             else:
                 print("Translation failed: No translation available")
@@ -263,14 +260,6 @@ def fetch_comments_reddit(url):
 
 
 
-
-
-
-
-
-
-
-
 def sentiment_analysis(request):
     if request.method == 'POST':
         form = SentimentAnalysisForm(request.POST, request.FILES)
@@ -292,7 +281,7 @@ def sentiment_analysis(request):
                         comments = fetch_comments_reddit(url)
 
                     elif 'ekantipur.com' in url:
-                        comments = fetch_news(url)
+                        comments = fetch_news(request, url)
                 elif file:
                     try:
                         df = pd.read_csv(file)
@@ -335,16 +324,19 @@ def sentiment_analysis(request):
                 # Prepare data for Chart.js
                 labels = ['Positive', 'Negative', 'Neutral']
                 data = [positive_count, negative_count, neutral_count]
+                total_data = sum(data)
 
                 print(data)
                 chart_data = {
                     'labels': labels,
                     'data': data,
+                    'total_data':total_data ,
                 }
                 chart_data_json = json.dumps(chart_data)
 
                 context = {
                     'form': form,
+                    'url' : url ,
                     'chart_data_json': chart_data_json,
                 }
                 return render(request, 'sentiment_analysis_result.html', context)
@@ -358,17 +350,9 @@ def sentiment_analysis(request):
 
 
 
-
-
-
-
-
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
 import time
 
-def fetch_news(url):
+def fetch_news(request, url):
     options = Options()
     options.headless = True  # Set headless mode to True to run Chrome in the background
     driver = webdriver.Chrome(options=options)
@@ -380,6 +364,7 @@ def fetch_news(url):
         # Find all articles on the page
         articles = driver.find_elements(By.TAG_NAME, 'article')
         comments = []
+        news_list = []
 
         for article in articles:
             try:
@@ -397,11 +382,20 @@ def fetch_news(url):
                 # Append the extracted data to the comments list
                 comments.append(description_text)
 
+                news_list.append({
+                    "title_text": title_text,
+                    "title_link": title_link,
+                    "description_text": description_text,
+                })
+
+                # return render(request , "news.html" , context)
+
             except Exception as e:
                 print(f"An error occurred while extracting article data: {e}")
                 continue
 
         print(f"Fetched {len(comments)} comments: {comments}")
+        request.session['news_list'] = news_list
         return comments
 
     except Exception as e:
@@ -410,3 +404,13 @@ def fetch_news(url):
 
     finally:
         driver.quit()
+
+
+
+
+def news(request):
+    # Retrieve news data from session
+    news_list = request.session.get('news_list', [])
+    return render(request, 'news.html', {'news_list': news_list})
+
+
