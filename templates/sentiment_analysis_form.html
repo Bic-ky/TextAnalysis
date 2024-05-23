@@ -1,16 +1,18 @@
-
 {% extends 'base.html' %}
 
 {% block content %}
   <!-- CONTACT MESSAGE AREA START -->
   <br><br><br>
+  <div id="loadingOverlay" style="display: none;">
+    <div class="dots-loader"></div>
+  </div>
   <div class="ltn__contact-message-area mb-120">
     <div class="container">
       <div class="row mt-120">
         <div class="col-lg-12">
           <div class="ltn__form-box contact-form-box box-shadow white-bg mt-220">
             <h4 class="title-2">Try Demo</h4>
-            <form method="post" action="{% url "webApp:sentiment_analysis" %}" enctype="multipart/form-data">
+            <form id="demoForm" method="post" action="{% url 'webApp:sentiment_analysis' %}" enctype="multipart/form-data">
               {% csrf_token %}
               {{ form.as_p }}
               <button type="submit" class="btn btn-primary rounded-pill">Submit</button>
@@ -32,4 +34,40 @@
     </div>
   </div>
   <!-- CONTACT MESSAGE AREA END -->
+
+  <script>
+    // Loader page
+    function startUpload() {
+      // Show loading overlay
+      document.body.classList.add('loading');
+      document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+
+    // Validate and initiate upload
+    function validateAndUpload(event) {
+      var urlInput = document.querySelector('input[name="url"]');
+      var fileInput = document.querySelector('input[name="file"]');
+
+      if (urlInput.value.trim() !== "" || fileInput.files.length > 0) {
+        // Call startUpload() function if a URL or file is provided
+        startUpload();
+      } else {
+        // Prevent form submission if neither a URL nor a file is provided
+        event.preventDefault();
+        // Display SweetAlert message
+        Swal.fire({
+          icon: 'error',
+          title: 'Please provide either a URL or a file before submitting.',
+        });
+      }
+    }
+
+    // Attach validateAndUpload to form submission
+    document.addEventListener('DOMContentLoaded', function() {
+      var form = document.getElementById('demoForm');
+      form.addEventListener('submit', function(event) {
+        validateAndUpload(event);
+      });
+    });
+  </script>
 {% endblock content %}

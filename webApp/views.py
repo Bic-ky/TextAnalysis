@@ -223,10 +223,6 @@ def fetch_comments_youtube(url, max_comments=50):
 #     return comments
 
 
-
-
-
-
 import praw
 
 def fetch_comments_reddit(url):
@@ -253,9 +249,6 @@ def fetch_comments_reddit(url):
     except Exception as e:
         print(f"An error occurred while fetching comments: {e}")
         return []
-
-
-
 
 
 
@@ -346,8 +339,6 @@ def sentiment_analysis(request):
     else:
         form = SentimentAnalysisForm()
     return render(request, 'sentiment_analysis_form.html', {'form': form})
-
-
 
 
 import time

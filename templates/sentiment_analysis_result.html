@@ -31,7 +31,11 @@
                 <div class="container-fluid">
                     <div class="row">
                         <div class="col-lg-8">
+                            <a href="{% url 'webApp:sentiment_analysis' %}" class="btn btn-primary"><i class="fa fa-arrow-left"></i> Go Back</a>
+                            <br><br>
                             <h3>Sentiment Analysis Results</h3>
+
+
                             <div class="card-body" style="max-height:600px;">
                                 <h4 class="card-title">Bar Chart</h4>
                                 <canvas id="sentimentChart"></canvas>
